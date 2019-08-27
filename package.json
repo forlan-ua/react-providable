@@ -2,7 +2,7 @@
   "name": "react-providable",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "lib/index.js",
   "scripts": {
     "build": "npx tsc --build tsconfig.build.json",
     "watch": "npx webpack --color --watch"
@@ -15,7 +15,7 @@
     "rxjs": "^6.5.2"
   },
   "directories": {
-    "lib": "./dist"
+    "lib": "./lib"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
