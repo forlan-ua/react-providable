@@ -33,7 +33,7 @@ export interface ProvidersMap<T> extends Map<IConstructor<T>, T> {
 }
 
 export function Providable(newProviders?: Array<IAnyConstructor | IProvidableAttribute>, knownProviders?: Array<IAnyConstructor>) {
-  const attributes: Array<IProvidableAttribute> = (newProviders || []).map(attribute => typeof attribute === 'function' ? {provide: attribute} : attribute);
+  const attributes: Array<IProvidableAttribute> = (newProviders || []).map(attribute => typeof attribute === 'function' ? {provide: attribute} : attribute).reverse();
 
   return function <T extends typeof React.Component>(Constructor: T): T {
     return class extends React.Component {
@@ -48,9 +48,10 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableAtt
             const [context] = injectableMap.get(type);
             const currentElement = element;
             element = React.createElement(context.Consumer, {key: 'Consumer'} as any, (value: any) => {
-              if (value) {
-                providers.set(type, value);
+              if (!value) {
+                console.error(`Looks like the \`${type.name}\` has not been provided.`);
               }
+              providers.set(type, value);
               return currentElement;
             });
           }
@@ -58,18 +59,25 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableAtt
           for (const [type, [context]] of injectableMap.entries()) {
             const currentElement = element;
             element = React.createElement(context.Consumer, {key: 'Consumer'} as any, (value: any) => {
-              if (value) {
-                providers.set(type, value);
+              if (!value) {
+                console.error(`Looks like the \`${type.name}\` has not been provided.`);
               }
+              providers.set(type, value);
               return currentElement;
             });
           }
         }
 
         for (const attribute of attributes) {
+          if (!injectableMap.has(attribute.provide)) {
+            throw new Error(`Looks like the \`${attribute.provide.name}\` has not been injected.`);
+          }
           const [context, deps] = injectableMap.get(attribute.provide);
 
           if (attribute.useExisting) {
+            if (!injectableMap.has(attribute.useExisting)) {
+              throw new Error(`Looks like the \`${attribute.useExisting.name}\` has not been injected.`);
+            }
             const [existingContext] = injectableMap.get(attribute.useExisting);
             const currentElement = element;
             element = React.createElement(existingContext.Consumer, {key: 'Consumer'} as any, (value: any) => {
@@ -92,11 +100,16 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableAtt
             }, null);
 
             deps.forEach((dep) => {
+              if (!injectableMap.has(dep)) {
+                throw new Error(`Looks like the \`${dep.name}\` has not been injected.`);
+              }
+              const [depsContext] = injectableMap.get(dep);
               const currentElement = element;
-              element = React.createElement(context.Consumer, {key: 'Consumer'} as any, (value: any) => {
-                if (value) {
-                  depsProviders.set(dep, value);
+              element = React.createElement(depsContext.Consumer, {key: 'Consumer'} as any, (value: any) => {
+                if (!value) {
+                  console.error(`Looks like the \`${dep.name}\` has not been provided.`);
                 }
+                depsProviders.set(dep, value);
                 return currentElement;
               });
             });

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {MyService} from './MyService.service';
+import {HttpClient} from './HttpClient.service';
 import {Providable} from '../../src';
 import {ProvidersMap} from '../../src/Providable';
 import {MyComponent2} from './MyComponent2';
@@ -11,9 +12,11 @@ type Props = {
 }
 
 
-@Providable([MyService])
+// @Providable([HttpClient, MyService])
 export class MyComponent extends React.Component<Props> {
   render() {
+    console.log('MyComponent', this.props.providers);
+
     return (
       <div>
         MyComponent: {this.props.test}

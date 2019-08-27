@@ -18,8 +18,8 @@ type State = {
   user: MyServiceUser,
 }
 
-@Providable()
-@Subscribable()
+// @Providable([MyService])
+// @Subscribable()
 export class MyComponent2 extends React.Component<Props, State> {
   private userService: MyService;
 
@@ -30,18 +30,26 @@ export class MyComponent2 extends React.Component<Props, State> {
       user: null,
     }
 
-    this.userService = this.props.providers.get(MyService);
+    // this.userService = this.props.providers.get(MyService);
   }
 
   componentDidMount() {
     const {subscribe} = this.props;
 
-    subscribe(this.userService.user$, (value) => {
-      this.setState({user: value});
-    });
+    // subscribe(this.userService.user$, (value) => {
+    //   this.setState({user: value});
+    // });
+
+    console.log('MyComponent2:MOUNT');
+  }
+
+  componentWillUnmount() {
+    console.log('MyComponent2:UNMOUNT');
   }
   
   render() {
+    console.log('MyComponent2', this.props.providers);
+
     return (
       <div>
         MyComponent2: {this.props.test} {this.state.user && this.state.user.name}
