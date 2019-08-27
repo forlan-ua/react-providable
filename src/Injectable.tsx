@@ -7,7 +7,7 @@ export type IInjectableMapEntry = [React.Context<Object>, Array<IAnyConstructor>
 export const injectableMap: Map<IAnyConstructor, IInjectableMapEntry> = new Map();
 
 
-type InjectableOptions = {
+export type InjectableOptions = {
   deps?: Array<IAnyConstructor>;
 }
 

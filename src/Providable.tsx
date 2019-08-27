@@ -3,7 +3,7 @@ import * as React from 'react';
 import {IConstructor, IAnyConstructor, injectableMap} from './Injectable';
 
 
-type IProvidableAttribute = {
+export type IProvidableAttribute = {
   provide: IAnyConstructor;
   useValue?: Object | null | undefined;
   useClass?: IAnyConstructor;
