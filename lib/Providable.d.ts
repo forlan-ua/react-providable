@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { IConstructor, IAnyConstructor } from './Injectable';
-export declare type IProvidableAttribute = {
+export declare type IProvidableOptions = {
     provide: IAnyConstructor;
     useValue?: Object | null | undefined;
     useClass?: IAnyConstructor;
@@ -11,4 +11,4 @@ export declare type IProvidableAttribute = {
 export interface ProvidersMap<T> extends Map<IConstructor<T>, T> {
     get<T>(type: IConstructor<T>): T;
 }
-export declare function Providable(newProviders?: Array<IAnyConstructor | IProvidableAttribute>, knownProviders?: Array<IAnyConstructor>): <T extends typeof React.Component>(Constructor: T) => T;
+export declare function Providable(newProviders?: Array<IAnyConstructor | IProvidableOptions>, knownProviders?: Array<IAnyConstructor>): <T extends typeof React.Component>(Constructor: T) => T;

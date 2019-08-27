@@ -18,8 +18,8 @@ type State = {
   user: MyServiceUser,
 }
 
-// @Providable([MyService])
-// @Subscribable()
+@Providable(null, [MyService])
+@Subscribable()
 export class MyComponent2 extends React.Component<Props, State> {
   private userService: MyService;
 
@@ -30,7 +30,7 @@ export class MyComponent2 extends React.Component<Props, State> {
       user: null,
     }
 
-    // this.userService = this.props.providers.get(MyService);
+    this.userService = this.props.providers.get(MyService);
   }
 
   componentDidMount() {

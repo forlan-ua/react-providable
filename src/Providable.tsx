@@ -3,7 +3,7 @@ import * as React from 'react';
 import {IConstructor, IAnyConstructor, injectableMap} from './Injectable';
 
 
-export type IProvidableAttribute = {
+export type IProvidableOptions = {
   provide: IAnyConstructor;
   useValue?: Object | null | undefined;
   useClass?: IAnyConstructor;
@@ -12,35 +12,37 @@ export type IProvidableAttribute = {
   withArgs?: Array<any>;
 }
 
-function createInstance(attribute: IProvidableAttribute) {
-  if ('useValue' in attribute) {
-    return attribute.useValue;
+function createInstance(options: IProvidableOptions) {
+  if ('useValue' in options) {
+    return options.useValue;
   }
 
-  if (attribute.useFactory) {
-    return attribute.useFactory(...(attribute.withArgs || []));
+  if (options.useFactory) {
+    return options.useFactory(...(options.withArgs || []));
   }
 
-  if (attribute.useClass) {
-    return new attribute.useClass(...(attribute.withArgs || []));
+  if (options.useClass) {
+    return new options.useClass(...(options.withArgs || []));
   }
 
-  return new attribute.provide(...(attribute.withArgs || []));
+  return new options.provide(...(options.withArgs || []));
 }
 
 export interface ProvidersMap<T> extends Map<IConstructor<T>, T> {
   get<T>(type: IConstructor<T>): T;
 }
 
-export function Providable(newProviders?: Array<IAnyConstructor | IProvidableAttribute>, knownProviders?: Array<IAnyConstructor>) {
-  const attributes: Array<IProvidableAttribute> = (newProviders || []).map(attribute => typeof attribute === 'function' ? {provide: attribute} : attribute).reverse();
+export function Providable(newProviders?: Array<IAnyConstructor | IProvidableOptions>, knownProviders?: Array<IAnyConstructor>) {
+  const newProvidersOptions: Array<IProvidableOptions> = (newProviders || []).map(options => typeof options === 'function' ? {provide: options} : options).reverse();
 
   return function <T extends typeof React.Component>(Constructor: T): T {
     return class extends React.Component {
       private _cachedInstances: Map<IConstructor<T>, T> = new Map();
+      private _providers: Map<IConstructor<T>, T> = new Map();
 
       render() {
-        const providers = new Map();
+        const providers = this._providers;
+
         let element: React.ReactNode = React.createElement(Constructor, {...this.props, providers} as any, null);
 
         if (knownProviders) {
@@ -68,38 +70,25 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableAtt
           }
         }
 
-        for (const attribute of attributes) {
-          if (!injectableMap.has(attribute.provide)) {
-            throw new Error(`Looks like the \`${attribute.provide.name}\` has not been injected.`);
+        for (const options of newProvidersOptions) {
+          if (!injectableMap.has(options.provide)) {
+            throw new Error(`Looks like the \`${options.provide.name}\` has not been injected.`);
           }
-          const [context, deps] = injectableMap.get(attribute.provide);
+          const [context, deps] = injectableMap.get(options.provide);
 
-          if (attribute.useExisting) {
-            if (!injectableMap.has(attribute.useExisting)) {
-              throw new Error(`Looks like the \`${attribute.useExisting.name}\` has not been injected.`);
+          if (options.useExisting) {
+            if (!injectableMap.has(options.useExisting)) {
+              throw new Error(`Looks like the \`${options.useExisting.name}\` has not been injected.`);
             }
-            const [existingContext] = injectableMap.get(attribute.useExisting);
+            const [existingContext] = injectableMap.get(options.useExisting);
             const currentElement = element;
             element = React.createElement(existingContext.Consumer, {key: 'Consumer'} as any, (value: any) => {
               return React.createElement(context.Provider, {value, key: 'Provider'}, currentElement);
             });
           } if (deps.length > 0) {
             const depsProviders: Map<IAnyConstructor, any> = new Map();
-            const currentElement = element;
 
-            element = React.createElement((): any => {
-              if (attribute.withArgs) {
-                attribute.withArgs.push(depsProviders);
-              } else {
-                attribute.withArgs = [depsProviders];
-              }
-              const instance = this._cachedInstances.get(attribute.provide) || createInstance(attribute);
-              this._cachedInstances.set(attribute.provide, instance);
-
-              return React.createElement(context.Provider, {value: instance, key: 'Provider'}, currentElement);
-            }, null);
-
-            deps.forEach((dep) => {
+            deps.forEach((dep, index) => {
               if (!injectableMap.has(dep)) {
                 throw new Error(`Looks like the \`${dep.name}\` has not been injected.`);
               }
@@ -110,17 +99,30 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableAtt
                   console.error(`Looks like the \`${dep.name}\` has not been provided.`);
                 }
                 depsProviders.set(dep, value);
+                if (index === 0) {
+                  let instance = this._cachedInstances.get(options.provide);
+                  if (!instance) {
+                    const withArgs = (options.withArgs || []).slice();
+                    withArgs.push(depsProviders);
+                    instance = createInstance({...options, withArgs});
+                    this._cachedInstances.set(options.provide, instance);
+                  }
+                  return React.createElement(context.Provider, {value: instance, key: 'Provider'}, currentElement);
+                }
                 return currentElement;
               });
             });
           } else {
-            const instance = this._cachedInstances.get(attribute.provide) || createInstance(attribute);
-            this._cachedInstances.set(attribute.provide, instance);
+            let instance = this._cachedInstances.get(options.provide);
+            if (!instance) {
+              instance = createInstance(options);
+              this._cachedInstances.set(options.provide, instance);
+            }
             element = React.createElement(context.Provider, {value: instance, key: 'Provider'}, element);
           }
         }
 
-        return element;
+        return React.createElement(React.Fragment, null, element);
       }
     } as any;
   }

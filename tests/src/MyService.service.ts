@@ -1,6 +1,7 @@
 import {BehaviorSubject} from 'rxjs';
 import {Injectable, ProvidersMap} from '../../src';
 import {HttpClient} from './HttpClient.service';
+import {HttpClient2} from './HttpClient2.service';
 
 let i = 0;
 
@@ -9,7 +10,7 @@ export type MyServiceUser = {
 }
 
 @Injectable({
-  deps: [HttpClient]
+  deps: [HttpClient, HttpClient2]
 })
 export class MyService {
   name = `MyService${++i}`;
