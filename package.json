@@ -5,7 +5,8 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "npx tsc --build tsconfig.build.json",
-    "start:counter": "npx webpack-dev-server --color --config examples/counter/webpack.config.js"
+    "start:counter": "npx cross-env APP=counter webpack-dev-server --color --config examples/webpack.config.js",
+    "start:todo": "npx cross-env APP=todo webpack-dev-server --color --config examples/webpack.config.js"
   },
   "author": "Ievgen Svietikov <ievgen.svietikov@gail.com>",
   "license": "MIT",
@@ -27,6 +28,7 @@
     "@types/react-dom": "^16.9.0",
     "autoprefixer": "^9.6.1",
     "babel-loader": "^8.0.6",
+    "cross-env": "^5.2.1",
     "css-loader": "^3.2.0",
     "html-webpack-plugin": "^3.2.0",
     "mini-css-extract-plugin": "^0.8.0",

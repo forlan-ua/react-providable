@@ -1,9 +1,9 @@
 import * as React from 'react';
-import {Providable, ProvidersMap} from '../../../src/Providable';
-import {SubscribeFunction, Subscribable} from '../../../src/Subscribable';
+import {Providable, ProvidersMap} from '../../src/Providable';
+import {SubscribeFunction, Subscribable} from '../../src/Subscribable';
 import {CounterService, CounterState, CounterDirection, CounterStatus} from './Counter.service';
 
-require('./App.css');
+require('./CounterApp.css');
 
 
 type Props = {
@@ -19,7 +19,7 @@ type State = {
 
 @Providable([CounterService])
 @Subscribable()
-export class App extends React.Component<Props, State> {
+export class CounterApp extends React.Component<Props, State> {
   private counterService: CounterService;
 
   constructor(props: Props) {

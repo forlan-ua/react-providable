@@ -6,9 +6,9 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: "development",
-  entry: path.join(__dirname, "src", "index.tsx"),
+  entry: path.join(__dirname, process.env.APP, "index.tsx"),
   output: {
-    path: path.join(__dirname, 'build'),
+    path: path.join(__dirname, 'build', process.env.APP),
     filename: "scripts.js"
   },
   devtool: "source-map",
@@ -58,7 +58,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       title: 'Counter App',
-      template: path.join(__dirname, '..', 'index.html')
+      template: path.join(__dirname, 'index.html')
     })
   ]
 }

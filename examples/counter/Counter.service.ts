@@ -1,5 +1,5 @@
 import {BehaviorSubject} from 'rxjs';
-import {Injectable} from '../../../src/Injectable';
+import {Injectable} from '../../src/Injectable';
 
 
 export enum CounterStatus {
