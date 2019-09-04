@@ -8,3 +8,4 @@ tsconfig*
 webpack*
 package-lock.json
 src
+example
