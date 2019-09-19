@@ -1,43 +1,39 @@
 import * as React from 'react';
-import {Providable, ProvidersMap} from '../../src/Providable';
-import {SubscribeFunction, Subscribable} from '../../src/Subscribable';
+import {Providable} from '../../src/Providable';
+import {Subscribable} from '../../src/Subscribable';
+import {subscribe, provider} from '../../src/decorators';
 import {CounterService, CounterState, CounterDirection, CounterStatus} from './Counter.service';
+import { Subject } from 'rxjs';
 
 require('./CounterApp.css');
 
 
 type Props = {
-  providers?: ProvidersMap<CounterService>;
-  subscribe?: SubscribeFunction;
+  myprop: string;
 }
 
 type State = {
   valueForSet: string,
   speedForSet: string,
-} & CounterState;
+};
 
 
 @Providable([CounterService])
 @Subscribable()
 export class CounterApp extends React.Component<Props, State> {
-  private counterService: CounterService;
+  @provider(CounterService)
+  private counterService: CounterService = null;
+
+  @subscribe(CounterService, 'state$')
+  private counterState: CounterState = null;
 
   constructor(props: Props) {
     super(props);
 
-    this.counterService = props.providers.get(CounterService);
-    const state = this.counterService.state$.getValue();
     this.state = {
-      ...state,
-      valueForSet: state.value.toString(),
-      speedForSet: state.speed.toString(),
+      valueForSet: '10',
+      speedForSet: '200',
     };
-  }
-
-  componentDidMount() {
-    this.props.subscribe(this.counterService.state$, (counter) => {
-      this.setState(counter);
-    });
   }
 
   onStartClick = () => {
@@ -73,11 +69,15 @@ export class CounterApp extends React.Component<Props, State> {
   }
 
   render() {
+    if (!this.counterState) {
+      return;
+    }
+
     return (
       <section>
-        <h1>{this.state.value}</h1>
+        <h1>{this.counterState.value}</h1>
         <div>
-          Current status: {CounterStatus[this.state.status]}<br/>
+          Current status: {CounterStatus[this.counterState.status]}<br/>
           <button type="button" onClick={this.onStartClick}>Start</button>
           <button type="button" onClick={this.onStopClick}>Stop</button>
         </div>
@@ -88,13 +88,13 @@ export class CounterApp extends React.Component<Props, State> {
         </div>
         <hr />
         <div>
-          Current speed: {this.state.speed}ms <br />
-          Set speed (ms): <input type="text" value={this.state.speedForSet} onChange={this.onSpeedChange} />
+          Current speed: {this.counterState.speed}ms <br />
+          Set speed (ms): <input type="text" value={this.state.speedForSet || this.counterState.speed} onChange={this.onSpeedChange} />
           <button type="button" onClick={this.onSpeedChangeSetClick}>Set</button>
         </div>
         <hr />
         <div>
-          Current direction: {CounterDirection[this.state.direction]} <br />
+          Current direction: {CounterDirection[this.counterState.direction]} <br />
           <button type="button" onClick={this.onDirectionForwardClick}>Forward</button>
           <button type="button" onClick={this.onDirectionBackwardClick}>Backward</button>
         </div>

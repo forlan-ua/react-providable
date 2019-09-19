@@ -20,7 +20,7 @@ export type CounterState = {
   status: CounterStatus,
 }
 
-const initialState: CounterState = {
+export const initialState: CounterState = {
   value: 0,
   speed: 1000,
   step: 1,

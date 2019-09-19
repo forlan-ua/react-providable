@@ -5,7 +5,7 @@ import {IConstructor, IAnyConstructor, injectableMap} from './Injectable';
 
 export type IProvidableOptions = {
   provide: IAnyConstructor;
-  useValue?: Object | null | undefined;
+  useValue?: Object | null;
   useClass?: IAnyConstructor;
   useExisting?: IAnyConstructor;
   useFactory?: Function;
@@ -28,22 +28,37 @@ function createInstance(options: IProvidableOptions) {
   return new options.provide(...(options.withArgs || []));
 }
 
-export interface ProvidersMap<T> extends Map<IConstructor<T>, T> {
-  get<T>(type: IConstructor<T>): T;
+
+type IProvidable<P={}, S={}, SS=any> = new (...args: Array<any>) => React.Component<P, S, SS> & {
+  onChangeProvider?: <T>(type: IAnyConstructor, newProvider: T | null, oldProvider: T | null) => void;
 }
 
 export function Providable(newProviders?: Array<IAnyConstructor | IProvidableOptions>, knownProviders?: Array<IAnyConstructor>) {
   const newProvidersOptions: Array<IProvidableOptions> = (newProviders || []).map(options => typeof options === 'function' ? {provide: options} : options).reverse();
 
-  return function <T extends typeof React.Component>(Constructor: T): T {
-    return class extends React.Component {
-      private _cachedInstances: Map<IConstructor<T>, T> = new Map();
-      private _providers: Map<IConstructor<T>, T> = new Map();
+  return function <T extends IProvidable>(Constructor: T): T {
+    return class extends Constructor {
+      private __cachedInstances: Map<IAnyConstructor, any> = new Map();
+      private __providers: Map<IAnyConstructor, any> = new Map();
+
+      private __setProvider<T>(type: IConstructor<T>, provider: T) {
+        const cachedProvider = this.__providers.get(type);
+        if (cachedProvider && cachedProvider !== provider) {
+          this.__providers.set(type, provider);
+          if (this.onChangeProvider) {
+            this.onChangeProvider(type, provider, cachedProvider);
+          }
+        } else if (!cachedProvider) {
+          this.__providers.set(type, provider);
+          if (this.onChangeProvider) {
+            this.onChangeProvider(type, provider, null);
+          }
+        }
+      }
 
       render() {
-        const providers = this._providers;
-
-        let element: React.ReactNode = React.createElement(Constructor, {...this.props, providers} as any, null);
+        let element: React.ReactNode = null;
+        const render = super.render;
 
         if (knownProviders) {
           for (const type of knownProviders) {
@@ -53,21 +68,31 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableOpt
               if (!value) {
                 console.error(`Looks like the \`${type.name}\` has not been provided.`);
               }
-              providers.set(type, value);
-              return currentElement;
+              this.__setProvider(type, value);
+              if (currentElement) {
+                return currentElement;
+              } else {
+                return render.call(this);
+              }
             });
           }
-        } else {
+        } else if (injectableMap.size > 0) {
           for (const [type, [context]] of injectableMap.entries()) {
             const currentElement = element;
             element = React.createElement(context.Consumer, {key: 'Consumer'} as any, (value: any) => {
               if (!value) {
                 console.error(`Looks like the \`${type.name}\` has not been provided.`);
               }
-              providers.set(type, value);
-              return currentElement;
+              this.__setProvider(type, value);
+              if (currentElement) {
+                return currentElement;
+              } else {
+                return render.call(this);
+              }
             });
           }
+        } else {
+          return super.render();
         }
 
         for (const options of newProvidersOptions) {
@@ -85,7 +110,7 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableOpt
             element = React.createElement(existingContext.Consumer, {key: 'Consumer'} as any, (value: any) => {
               return React.createElement(context.Provider, {value, key: 'Provider'}, currentElement);
             });
-          } if (deps.length > 0) {
+          } else if (deps.length > 0) {
             const depsProviders: Map<IAnyConstructor, any> = new Map();
 
             deps.forEach((dep, index) => {
@@ -100,12 +125,12 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableOpt
                 }
                 depsProviders.set(dep, value);
                 if (index === 0) {
-                  let instance = this._cachedInstances.get(options.provide);
+                  let instance = this.__cachedInstances.get(options.provide);
                   if (!instance) {
                     const withArgs = (options.withArgs || []).slice();
                     withArgs.push(depsProviders);
                     instance = createInstance({...options, withArgs});
-                    this._cachedInstances.set(options.provide, instance);
+                    this.__cachedInstances.set(options.provide, instance);
                   }
                   return React.createElement(context.Provider, {value: instance, key: 'Provider'}, currentElement);
                 }
@@ -113,17 +138,17 @@ export function Providable(newProviders?: Array<IAnyConstructor | IProvidableOpt
               });
             });
           } else {
-            let instance = this._cachedInstances.get(options.provide);
+            let instance = this.__cachedInstances.get(options.provide);
             if (!instance) {
               instance = createInstance(options);
-              this._cachedInstances.set(options.provide, instance);
+              this.__cachedInstances.set(options.provide, instance);
             }
             element = React.createElement(context.Provider, {value: instance, key: 'Provider'}, element);
           }
         }
 
-        return React.createElement(React.Fragment, null, element);
+        return element;
       }
-    } as any;
+    };
   }
 }
